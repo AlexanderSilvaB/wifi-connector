@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:23:21
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-13 19:17:59
+ * @Last Modified time: 2024-07-13 19:39:36
  */
 
 #include "WiFiConnector.h"
@@ -304,8 +304,6 @@ bool WiFiConnector::loadParams()
     deserializeJson(doc, file);
     file.close();
 
-    char *str_value;
-    int int_value;
     for (vector<WiFiParameter>::iterator it = this->params.begin(); it != this->params.end(); it++)
     {
         if (!it->isParam())
@@ -315,23 +313,20 @@ bool WiFiConnector::loadParams()
         {
             if (it->is_string)
             {
-                strcpy(str_value, doc[it->id()]);
-                it->set(str_value);
+                it->set((const char *)doc[it->id()]);
             }
             else if (it->is_int)
             {
-                int_value = doc[it->id()];
-                it->set(int_value);
+                it->set((int)doc[it->id()]);
             }
         }
     }
+    return true;
 }
 
 void WiFiConnector::saveParams()
 {
     JsonDocument doc;
-    const char *str_value;
-    int int_value;
     for (vector<WiFiParameter>::iterator it = this->params.begin(); it != this->params.end(); it++)
     {
         if (!it->isParam())

@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 16:35:43
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-13 18:30:58
+ * @Last Modified time: 2024-07-13 19:33:57
  */
 
 #ifndef WiFiParameter_h
@@ -26,7 +26,7 @@ public:
     WiFiParameter(const char *text);
     WiFiParameter(const char *id, const char *label, const char *defaultValue);
     WiFiParameter(const char *id, const char *label, int defaultValue);
-    ~WiFiParameter();
+    virtual ~WiFiParameter();
 
     bool isParam();
     const char *id();
