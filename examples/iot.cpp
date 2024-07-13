@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:00:30
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-14 00:28:26
+ * @Last Modified time: 2024-07-14 00:53:04
  */
 
 #include <Arduino.h>
@@ -86,7 +86,7 @@ void setupIOT()
 void handleDevice()
 {
     unsigned long actualMillis = millis();
-    if (actualMillis - lastChange < 250)
+    if (actualMillis - lastChange < 500)
         return;
 
     if (conn.getButtonValue())
