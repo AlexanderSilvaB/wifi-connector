@@ -2,9 +2,10 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:58:53
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-13 19:27:06
+ * @Last Modified time: 2024-07-13 19:55:20
  */
 
+#include <Arduino.h>
 #include <WiFiConnector.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
