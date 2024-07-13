@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:44:53
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-13 22:36:23
+ * @Last Modified time: 2024-07-14 00:18:54
  */
 #ifndef WiFiConnector_h
 #define WiFiConnector_h
@@ -52,8 +52,8 @@ public:
 
     bool init();
     void addHTML(const char *value);
-    void addParam(const char *id, const char *label, const char *defaultValue);
-    void addParam(const char *id, const char *label, int defaultValue);
+    void addParam(const char *id, const char *label, const char *defaultValue, const int maxLength = -1);
+    void addParam(const char *id, const char *label, int defaultValue, const int maxLength = -1);
 
     int getInt(const char *id);
     const char *getStr(const char *id);
@@ -78,7 +78,7 @@ public:
 
 private:
     WiFiManager wm;
-    std::vector<WiFiParameter> params;
+    std::vector<WiFiParameter *> params;
     Ticker timer;
     Stream *stream;
     const char *apName;

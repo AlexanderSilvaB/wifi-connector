@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 16:35:43
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-13 19:33:57
+ * @Last Modified time: 2024-07-14 00:18:48
  */
 
 #ifndef WiFiParameter_h
@@ -20,12 +20,12 @@ public:
     int int_value;
     const char *default_str;
     int default_int;
+    int max_len;
     WiFiManagerParameter *param;
 
-    WiFiParameter(const WiFiParameter &param);
     WiFiParameter(const char *text);
-    WiFiParameter(const char *id, const char *label, const char *defaultValue);
-    WiFiParameter(const char *id, const char *label, int defaultValue);
+    WiFiParameter(const char *id, const char *label, const char *defaultValue, const int maxLength = -1);
+    WiFiParameter(const char *id, const char *label, int defaultValue, const int maxLength = -1);
     virtual ~WiFiParameter();
 
     bool isParam();

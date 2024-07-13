@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:23:21
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-13 22:36:25
+ * @Last Modified time: 2024-07-14 00:19:00
  */
 
 #include "WiFiConnector.h"
@@ -40,6 +40,10 @@ WiFiConnector::WiFiConnector(int button, int status, const char *fileName)
 
 WiFiConnector::~WiFiConnector()
 {
+    for (vector<WiFiParameter *>::iterator it = this->params.begin(); it != this->params.end(); it++)
+    {
+        delete (*it);
+    }
 }
 
 const char *WiFiConnector::getSettingsFile()
@@ -266,16 +270,16 @@ bool WiFiConnector::init()
         this->stream->printf("[WiFi Connector] Setting hostname = %s!\n", this->getHostName());
     }
     wm.setHostname(this->hostname);
-    for (vector<WiFiParameter>::iterator it = this->params.begin(); it != this->params.end(); it++)
+    for (vector<WiFiParameter *>::iterator it = this->params.begin(); it != this->params.end(); it++)
     {
         if (this->stream)
         {
-            if (it->isParam())
-                this->stream->printf("[WiFi Connector] Adding parameter = %s!\n", it->id());
+            if ((*it)->isParam())
+                this->stream->printf("[WiFi Connector] Adding parameter = %s!\n", (*it)->id());
             else
                 this->stream->printf("[WiFi Connector] Adding text!\n");
         }
-        wm.addParameter(it->param);
+        wm.addParameter((*it)->param);
     }
     wm.setSaveParamsCallback(std::bind(&WiFiConnector::saveParams, this));
     wm.setConfigResetCallback(std::bind(&WiFiConnector::resetParams, this));
@@ -435,17 +439,17 @@ bool WiFiConnector::ready()
 
 void WiFiConnector::addHTML(const char *text)
 {
-    this->params.push_back(WiFiParameter(text));
+    this->params.push_back(new WiFiParameter(text));
 }
 
-void WiFiConnector::addParam(const char *id, const char *label, const char *defaultValue)
+void WiFiConnector::addParam(const char *id, const char *label, const char *defaultValue, const int maxLength)
 {
-    this->params.push_back(WiFiParameter(id, label, defaultValue));
+    this->params.push_back(new WiFiParameter(id, label, defaultValue, maxLength));
 }
 
-void WiFiConnector::addParam(const char *id, const char *label, int defaultValue)
+void WiFiConnector::addParam(const char *id, const char *label, int defaultValue, const int maxLength)
 {
-    this->params.push_back(WiFiParameter(id, label, defaultValue));
+    this->params.push_back(new WiFiParameter(id, label, defaultValue, maxLength));
 }
 
 int WiFiConnector::getInt(const char *id)
@@ -464,13 +468,13 @@ const char *WiFiConnector::getStr(const char *id)
 
 bool WiFiConnector::get(const char *id, int *value)
 {
-    for (vector<WiFiParameter>::iterator it = this->params.begin(); it != this->params.end(); it++)
+    for (vector<WiFiParameter *>::iterator it = this->params.begin(); it != this->params.end(); it++)
     {
-        if (!it->isParam() || !it->is_int)
+        if (!(*it)->isParam() || !(*it)->is_int)
             continue;
-        if (strcmp(it->id(), id) == 0)
+        if (strcmp((*it)->id(), id) == 0)
         {
-            *value = it->getInt();
+            *value = (*it)->getInt();
             return true;
         }
     }
@@ -479,13 +483,13 @@ bool WiFiConnector::get(const char *id, int *value)
 
 bool WiFiConnector::get(const char *id, const char **value)
 {
-    for (vector<WiFiParameter>::iterator it = this->params.begin(); it != this->params.end(); it++)
+    for (vector<WiFiParameter *>::iterator it = this->params.begin(); it != this->params.end(); it++)
     {
-        if (!it->isParam() || !it->is_string)
+        if (!(*it)->isParam() || !(*it)->is_string)
             continue;
-        if (strcmp(it->id(), id) == 0)
+        if (strcmp((*it)->id(), id) == 0)
         {
-            *value = it->getStr();
+            *value = (*it)->getStr();
             return true;
         }
     }
@@ -512,20 +516,20 @@ void WiFiConnector::loadParams()
     deserializeJson(doc, file);
     file.close();
 
-    for (vector<WiFiParameter>::iterator it = this->params.begin(); it != this->params.end(); it++)
+    for (vector<WiFiParameter *>::iterator it = this->params.begin(); it != this->params.end(); it++)
     {
-        if (!it->isParam())
+        if (!(*it)->isParam())
             continue;
 
-        if (doc.containsKey(it->id()))
+        if (doc.containsKey((*it)->id()))
         {
-            if (it->is_string)
+            if ((*it)->is_string)
             {
-                it->set((const char *)doc[it->id()]);
+                (*it)->set((const char *)doc[(*it)->id()]);
             }
-            else if (it->is_int)
+            else if ((*it)->is_int)
             {
-                it->set((int)doc[it->id()]);
+                (*it)->set((int)doc[(*it)->id()]);
             }
         }
     }
@@ -541,18 +545,18 @@ void WiFiConnector::loadParams()
 void WiFiConnector::saveParams()
 {
     JsonDocument doc;
-    for (vector<WiFiParameter>::iterator it = this->params.begin(); it != this->params.end(); it++)
+    for (vector<WiFiParameter *>::iterator it = this->params.begin(); it != this->params.end(); it++)
     {
-        if (!it->isParam())
+        if (!(*it)->isParam())
             continue;
 
-        if (it->is_string)
+        if ((*it)->is_string)
         {
-            doc[it->id()] = it->getStr();
+            doc[(*it)->id()] = (*it)->getStr();
         }
-        else if (it->is_int)
+        else if ((*it)->is_int)
         {
-            doc[it->id()] = it->getInt();
+            doc[(*it)->id()] = (*it)->getInt();
         }
     }
 
@@ -579,18 +583,18 @@ void WiFiConnector::resetParams()
     {
         this->stream->printf("[WiFi Connector] Reseting parameters...\n");
     }
-    for (vector<WiFiParameter>::iterator it = this->params.begin(); it != this->params.end(); it++)
+    for (vector<WiFiParameter *>::iterator it = this->params.begin(); it != this->params.end(); it++)
     {
-        if (!it->isParam())
+        if (!(*it)->isParam())
             continue;
 
-        if (it->is_string)
+        if ((*it)->is_string)
         {
-            it->set(it->default_str);
+            (*it)->set((*it)->default_str);
         }
-        else if (it->is_int)
+        else if ((*it)->is_int)
         {
-            it->set(it->default_int);
+            (*it)->set((*it)->default_int);
         }
     }
     this->saveParams();

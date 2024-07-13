@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:58:53
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-13 20:34:56
+ * @Last Modified time: 2024-07-14 00:22:44
  */
 
 #include <Arduino.h>
@@ -17,7 +17,6 @@ PubSubClient mqtt(client);
 const char *client_id;
 const char *server;
 int port;
-bool setup_done = false;
 
 void setup()
 {
@@ -41,7 +40,7 @@ void loop()
 {
     if (conn.ready())
     {
-        if (!setup_done)
+        if (conn.shouldSetup())
         {
             client_id = conn.getStr("client_id");
             server = conn.getStr("server");
@@ -50,23 +49,19 @@ void loop()
             Serial.printf("Configuring MQTT: %s:%d\r\n", server, port);
             mqtt.disconnect();
             mqtt.setServer(server, port);
-
-            setup_done = true;
         }
-        else
+
+        if (!mqtt.connected())
         {
-            if (!mqtt.connected())
+            Serial.printf("Connecting MQTT: Client ID = %s...\r\n", client_id);
+            if (mqtt.connect(client_id))
             {
-                Serial.printf("Connecting MQTT: Client ID = %s...\r\n", client_id);
-                if (mqtt.connect(client_id))
-                {
-                    Serial.println("Connected!");
-                }
-                else
-                {
-                    Serial.println("Failed!");
-                    delay(2000);
-                }
+                Serial.println("Connected!");
+            }
+            else
+            {
+                Serial.println("Failed!");
+                delay(2000);
             }
         }
     }
