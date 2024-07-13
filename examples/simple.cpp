@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:58:53
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-13 19:55:17
+ * @Last Modified time: 2024-07-13 20:34:48
  */
 
 #include <Arduino.h>
@@ -14,8 +14,8 @@ void setup()
 {
     Serial.begin(115200);
     Serial.println();
-    Serial.println("Starting up...");
 
+    conn.setStream(&Serial);
     conn.init();
 }
 
