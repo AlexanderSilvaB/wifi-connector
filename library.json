@@ -16,7 +16,10 @@
     ],
     "license": "MIT",
     "homepage": "https://github.com/AlexanderSilvaB/wifi-connector",
-    "dependencies": {},
+    "dependencies": {
+        "wnatth3/WiFiManager": "^2.0.16-rc.2",
+        "bblanchon/ArduinoJson": "^7.0.3"
+    },
     "frameworks": "*",
     "platforms": "*"
 }
