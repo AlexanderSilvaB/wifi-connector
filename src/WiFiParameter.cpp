@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 16:36:47
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-14 00:28:05
+ * @Last Modified time: 2024-07-14 00:49:57
  */
 
 #include "WiFiParameter.h"
@@ -23,7 +23,7 @@ WiFiParameter::WiFiParameter(const char *id, const char *label, const char *defa
 {
     this->max_len = maxLength;
     if (this->max_len <= 0)
-        this->max_len = 256;
+        this->max_len = 128;
     this->default_int = 0;
     this->default_str = defaultValue;
     this->is_int = false;
