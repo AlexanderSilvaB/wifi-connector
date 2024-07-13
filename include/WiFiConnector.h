@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:44:53
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-13 19:25:35
+ * @Last Modified time: 2024-07-13 20:21:34
  */
 #ifndef WiFiConnector_h
 #define WiFiConnector_h
@@ -46,6 +46,7 @@ public:
     void setTimeout(float seconds);
 
     void setAP(const char *name, const char *password = nullptr);
+    void setStream(const Stream *stream);
 
     bool init();
     void addHTML(const char *value);
@@ -70,6 +71,7 @@ private:
     WiFiManager wm;
     std::vector<WiFiParameter> params;
     Ticker timer;
+    Stream *stream;
     const char *apName;
     const char *apPassword;
     const char *title;
@@ -88,7 +90,7 @@ private:
     bool isValid;
     float configureInterval;
     float updateInterval;
-    bool loadParams();
+    void loadParams();
     void saveParams();
     void resetParams();
     void onStartOTA();

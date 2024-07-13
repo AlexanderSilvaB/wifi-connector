@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:23:21
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-13 19:39:36
+ * @Last Modified time: 2024-07-13 20:31:33
  */
 
 #include "WiFiConnector.h"
@@ -19,6 +19,7 @@ WiFiConnector::WiFiConnector(int button, int status, const char *fileName)
     this->setSettingsFile(fileName);
     this->setButton(button);
     this->setStatus(status);
+    this->setStream(nullptr);
 
     this->setDHCP();
     this->setHTMLHeader(nullptr);
@@ -138,23 +139,69 @@ bool WiFiConnector::init()
 {
     this->isValid = false;
 
+    if (this->stream)
+    {
+        this->stream->printf("[WiFi Connector] Starting up...\n");
+    }
+
     if (!LittleFS.begin())
+    {
+        if (this->stream)
+        {
+            this->stream->printf("[WiFi Connector] FS mounting failed!\n");
+        }
         return false;
-    if (!this->loadParams())
-        return false;
+    }
+    else
+    {
+        if (this->stream)
+        {
+            this->stream->printf("[WiFi Connector] FS mounted!\n");
+        }
+    }
+
+    this->loadParams();
 
     WiFi.mode(WIFI_STA);
 
     if (this->getStatus() >= 0)
     {
         pinMode(this->getStatus(), OUTPUT);
+        if (this->stream)
+        {
+            this->stream->printf("[WiFi Connector] Status configured on PIN %d!\n", this->getStatus());
+        }
         if (this->configureInterval > 0)
+        {
             this->timer.attach(this->configureInterval, std::bind(&WiFiConnector::notify, this));
+            if (this->stream)
+            {
+                this->stream->printf("[WiFi Connector] Status PIN  Interval = %f!\n", this->configureInterval);
+            }
+        }
+    }
+    else
+    {
+        if (this->stream)
+        {
+            this->stream->printf("[WiFi Connector] No status PIN!\n");
+        }
     }
 
     if (this->getButton() >= 0)
     {
         pinMode(this->getButton(), INPUT_PULLUP);
+        if (this->stream)
+        {
+            this->stream->printf("[WiFi Connector] Button configured on PIN %d!\n", this->getButton());
+        }
+    }
+    else
+    {
+        if (this->stream)
+        {
+            this->stream->printf("[WiFi Connector] No button PIN!\n");
+        }
     }
 
     wm.setTitle(this->getTitle());
@@ -191,6 +238,10 @@ bool WiFiConnector::init()
     wm.autoConnect(this->apName, this->apPassword);
 
     this->isValid = true;
+    if (this->stream)
+    {
+        this->stream->printf("[WiFi Connector] Ready!\n");
+    }
     return true;
 }
 
@@ -210,6 +261,10 @@ bool WiFiConnector::configure()
         this->isConfiguring = wm.getConfigPortalActive();
         if ((millis() - this->startTime) > (unsigned int)(this->timeout * 1000))
         {
+            if (this->stream)
+            {
+                this->stream->printf("[WiFi Connector] Setup portal timeout!\n");
+            }
             this->isConfiguring = false;
         }
         if (!this->isConfiguring)
@@ -218,6 +273,11 @@ bool WiFiConnector::configure()
 
     if (this->getButton() >= 0 && digitalRead(this->button) == LOW && !this->isConfiguring)
     {
+        if (this->stream)
+        {
+            this->stream->printf("[WiFi Connector] Starting setup portal!\n");
+        }
+
         wm.setConfigPortalBlocking(false);
         wm.startConfigPortal(this->apName, this->apPassword);
         this->isConfiguring = true;
@@ -294,11 +354,21 @@ bool WiFiConnector::get(const char *id, const char **value)
     return false;
 }
 
-bool WiFiConnector::loadParams()
+void WiFiConnector::loadParams()
 {
+    if (this->stream)
+    {
+        this->stream->printf("[WiFi Connector] Reading parameters file: %s\n", this->getSettingsFile());
+    }
     File file = LittleFS.open(this->getSettingsFile(), "r");
     if (!file)
-        return false;
+    {
+        if (this->stream)
+        {
+            this->stream->print("[WiFi Connector] Parameters file not found!\n");
+        }
+        return;
+    }
 
     JsonDocument doc;
     deserializeJson(doc, file);
@@ -321,7 +391,13 @@ bool WiFiConnector::loadParams()
             }
         }
     }
-    return true;
+
+    if (this->stream)
+    {
+        this->stream->printf("[WiFi Connector] Parameters loaded!\n");
+        serializeJson(doc, *this->stream);
+        this->stream->printf("\n");
+    }
 }
 
 void WiFiConnector::saveParams()
@@ -340,6 +416,22 @@ void WiFiConnector::saveParams()
         {
             doc[it->id()] = it->getInt();
         }
+    }
+
+    if (this->stream)
+    {
+        this->stream->printf("[WiFi Connector] Writing parameters to file: %s\n", this->getSettingsFile());
+    }
+
+    File file = LittleFS.open(this->getSettingsFile(), "w");
+    serializeJson(doc, file);
+    file.close();
+
+    if (this->stream)
+    {
+        this->stream->printf("[WiFi Connector] Parameters saved!\n");
+        serializeJson(doc, *this->stream);
+        this->stream->printf("\n");
     }
 }
 
@@ -364,6 +456,10 @@ void WiFiConnector::resetParams()
 
 void WiFiConnector::onStartOTA()
 {
+    if (this->stream)
+    {
+        this->stream->printf("[WiFi Connector] Starting OTA Update...\n");
+    }
     this->timer.detach();
     this->isUpdating = true;
     if (this->updateInterval > 0)
