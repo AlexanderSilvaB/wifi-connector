@@ -1,0 +1,22 @@
+{
+    "name": "WiFiConnector",
+    "version": "0.0.1",
+    "description": "A library for auto managing wifi credentials for Arduino-based WiFi boards",
+    "keywords": "wifi, manage, connector",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/AlexanderSilvaB/wifi-connector.git"
+    },
+    "authors": [
+        {
+            "name": "Alexander Silva Barbosa",
+            "email": "alexander.ti.ufv@gmail.com",
+            "url": "https://github.com/AlexanderSilvaB"
+        }
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/AlexanderSilvaB/wifi-connector",
+    "dependencies": {},
+    "frameworks": "*",
+    "platforms": "*"
+}
