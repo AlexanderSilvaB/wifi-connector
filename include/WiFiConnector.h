@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:44:53
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-13 20:21:34
+ * @Last Modified time: 2024-07-13 22:36:23
  */
 #ifndef WiFiConnector_h
 #define WiFiConnector_h
@@ -44,9 +44,11 @@ public:
     void setHTMLHeader(const char *header);
     float getTimeout();
     void setTimeout(float seconds);
+    float getStartTimeout();
+    void setStartTimeout(float seconds);
 
     void setAP(const char *name, const char *password = nullptr);
-    void setStream(const Stream *stream);
+    void setStream(Stream *stream);
 
     bool init();
     void addHTML(const char *value);
@@ -63,9 +65,16 @@ public:
 
     void configureStatus(float configure, float update);
 
+    bool connected();
+    void startPortal();
     bool configure();
     bool ready();
     bool valid();
+    bool getButtonValue();
+    bool shouldSetup();
+
+    void reset(bool clear = false);
+    void clear();
 
 private:
     WiFiManager wm;
@@ -82,14 +91,19 @@ private:
     const char *subnet;
     const char *header;
     int button;
+    bool buttonValue;
     int status;
     bool isConfiguring;
     bool isUpdating;
-    unsigned int startTime;
+    unsigned long startTime;
     float timeout;
+    float startTimeout;
     bool isValid;
+    bool shouldStartPortal;
+    bool isCheckingButton;
     float configureInterval;
     float updateInterval;
+    bool justDone;
     void loadParams();
     void saveParams();
     void resetParams();

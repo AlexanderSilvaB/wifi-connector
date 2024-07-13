@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:23:21
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-13 20:31:33
+ * @Last Modified time: 2024-07-13 22:36:25
  */
 
 #include "WiFiConnector.h"
@@ -28,10 +28,14 @@ WiFiConnector::WiFiConnector(int button, int status, const char *fileName)
     this->configureStatus(0.2, 0.05);
 
     this->setTimeout(120);
+    this->setStartTimeout(2);
     this->isConfiguring = false;
     this->isValid = false;
     this->isUpdating = false;
     this->startTime = millis();
+    this->shouldStartPortal = false;
+    this->isCheckingButton = false;
+    this->justDone = true;
 }
 
 WiFiConnector::~WiFiConnector()
@@ -123,16 +127,51 @@ void WiFiConnector::setTimeout(float seconds)
     this->timeout = seconds;
 }
 
+float WiFiConnector::getStartTimeout()
+{
+    return this->startTimeout;
+}
+
+void WiFiConnector::setStartTimeout(float seconds)
+{
+    this->startTimeout = seconds;
+}
+
+void WiFiConnector::startPortal()
+{
+    this->shouldStartPortal = true;
+}
+
 void WiFiConnector::setAP(const char *name, const char *password)
 {
     this->apName = name;
     this->apPassword = password;
 }
 
+void WiFiConnector::setStream(Stream *stream)
+{
+    this->stream = stream;
+}
+
 void WiFiConnector::configureStatus(float configure, float update)
 {
     this->configureInterval = configure;
     this->updateInterval = update;
+}
+
+bool WiFiConnector::getButtonValue()
+{
+    return this->buttonValue;
+}
+
+bool WiFiConnector::shouldSetup()
+{
+    if (this->justDone)
+    {
+        this->justDone = false;
+        return true;
+    }
+    return false;
 }
 
 bool WiFiConnector::init()
@@ -163,6 +202,13 @@ bool WiFiConnector::init()
     this->loadParams();
 
     WiFi.mode(WIFI_STA);
+#if defined(ESP8266)
+    WiFi.setSleepMode(WIFI_NONE_SLEEP);
+    WiFi.setAutoReconnect(true);
+#elif defined(ESP32)
+    WiFi.setSleep(false);
+    WiFi.setAutoReconnect(true);
+#endif
 
     if (this->getStatus() >= 0)
     {
@@ -204,12 +250,31 @@ bool WiFiConnector::init()
         }
     }
 
+    if (this->stream)
+    {
+        this->stream->printf("[WiFi Connector] Setting title = %s!\n", this->getTitle());
+    }
     wm.setTitle(this->getTitle());
+    if (this->stream)
+    {
+        this->stream->printf("[WiFi Connector] Setting params page visible = %d!\n", this->params.size() > 0);
+    }
     wm.setParamsPage(this->params.size() > 0);
     wm.setDarkMode(true);
+    if (this->stream)
+    {
+        this->stream->printf("[WiFi Connector] Setting hostname = %s!\n", this->getHostName());
+    }
     wm.setHostname(this->hostname);
     for (vector<WiFiParameter>::iterator it = this->params.begin(); it != this->params.end(); it++)
     {
+        if (this->stream)
+        {
+            if (it->isParam())
+                this->stream->printf("[WiFi Connector] Adding parameter = %s!\n", it->id());
+            else
+                this->stream->printf("[WiFi Connector] Adding text!\n");
+        }
         wm.addParameter(it->param);
     }
     wm.setSaveParamsCallback(std::bind(&WiFiConnector::saveParams, this));
@@ -221,18 +286,59 @@ bool WiFiConnector::init()
         IPAddress gateway;
         IPAddress subnet;
 
+        if (this->stream)
+        {
+            this->stream->printf("[WiFi Connector] Setting address = %s, gateway = %s, subnet = %s!\n", this->address, this->gateway, this->subnet);
+        }
+
         if (!address.fromString(this->address))
+        {
+            if (this->stream)
+            {
+                this->stream->printf("[WiFi Connector] Failed to set address = %s!\n", this->address);
+            }
             return false;
+        }
         if (!gateway.fromString(this->gateway))
+        {
+            if (this->stream)
+            {
+                this->stream->printf("[WiFi Connector] Failed to set gateway = %s!\n", this->gateway);
+            }
             return false;
+        }
         if (!subnet.fromString(this->subnet))
+        {
+            if (this->stream)
+            {
+                this->stream->printf("[WiFi Connector] Failed to set subnet = %s!\n", this->subnet);
+            }
             return false;
+        }
 
         wm.setAPStaticIPConfig(address, gateway, subnet);
+
+        if (this->stream)
+        {
+            this->stream->printf("[WiFi Connector] AP address set!\n");
+        }
+    }
+    else
+    {
+        if (this->stream)
+        {
+            this->stream->printf("[WiFi Connector] Starting in DHCP Mode!\n");
+        }
     }
 
     if (this->header)
+    {
+        if (this->stream)
+        {
+            this->stream->printf("[WiFi Connector] Adding custom header!\n");
+        }
         wm.setCustomHeadElement(this->header);
+    }
 
     wm.setPreOtaUpdateCallback(std::bind(&WiFiConnector::onStartOTA, this));
     wm.autoConnect(this->apName, this->apPassword);
@@ -250,6 +356,11 @@ bool WiFiConnector::valid()
     return this->isValid;
 }
 
+bool WiFiConnector::connected()
+{
+    return WiFi.status() == WL_CONNECTED;
+}
+
 bool WiFiConnector::configure()
 {
     if (!this->isValid)
@@ -259,7 +370,7 @@ bool WiFiConnector::configure()
     {
         wm.process();
         this->isConfiguring = wm.getConfigPortalActive();
-        if ((millis() - this->startTime) > (unsigned int)(this->timeout * 1000))
+        if ((millis() - this->startTime) > (unsigned long)(this->timeout * 1000))
         {
             if (this->stream)
             {
@@ -268,11 +379,38 @@ bool WiFiConnector::configure()
             this->isConfiguring = false;
         }
         if (!this->isConfiguring)
+        {
             wm.stopConfigPortal();
+            this->justDone = true;
+        }
     }
 
-    if (this->getButton() >= 0 && digitalRead(this->button) == LOW && !this->isConfiguring)
+    if (this->getButton() >= 0)
     {
+        this->buttonValue = digitalRead(this->button) == LOW;
+    }
+
+    if (this->getButton() >= 0 && this->buttonValue && !this->isConfiguring)
+    {
+        if (!this->isCheckingButton)
+        {
+            this->isCheckingButton = true;
+            this->startTime = millis();
+        }
+        else if ((millis() - this->startTime) > (unsigned long)(this->startTimeout * 1000))
+        {
+            this->isCheckingButton = false;
+            this->shouldStartPortal = true;
+        }
+    }
+    else
+    {
+        this->isCheckingButton = false;
+    }
+
+    if (this->shouldStartPortal)
+    {
+        this->shouldStartPortal = false;
         if (this->stream)
         {
             this->stream->printf("[WiFi Connector] Starting setup portal!\n");
@@ -437,6 +575,10 @@ void WiFiConnector::saveParams()
 
 void WiFiConnector::resetParams()
 {
+    if (this->stream)
+    {
+        this->stream->printf("[WiFi Connector] Reseting parameters...\n");
+    }
     for (vector<WiFiParameter>::iterator it = this->params.begin(); it != this->params.end(); it++)
     {
         if (!it->isParam())
@@ -483,4 +625,16 @@ void WiFiConnector::notify()
     {
         digitalWrite(this->status, !LOW);
     }
+}
+
+void WiFiConnector::reset(bool clear)
+{
+    if (clear)
+        this->clear();
+    this->wm.reboot();
+}
+
+void WiFiConnector::clear()
+{
+    this->wm.resetSettings();
 }
