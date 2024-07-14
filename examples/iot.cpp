@@ -2,7 +2,7 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:00:30
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-14 00:53:04
+ * @Last Modified time: 2024-07-14 01:01:17
  */
 
 #include <Arduino.h>
@@ -16,7 +16,6 @@
 #define DEVICE_ID "YOUR-DEVICE-ID"
 
 WiFiConnector conn;
-WiFiClient client;
 
 const char *device_id;
 const char *app_key;
