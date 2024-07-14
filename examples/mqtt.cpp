@@ -2,13 +2,15 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:58:53
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-14 00:22:44
+ * @Last Modified time: 2024-07-14 01:13:39
  */
 
 #include <Arduino.h>
 #include <WiFiConnector.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+
+// Needs: knolleary/PubSubClient@^2.8
 
 WiFiConnector conn;
 WiFiClient client;

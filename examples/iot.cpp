@@ -2,8 +2,10 @@
  * @Author: Alexander Silva Barbosa
  * @Date:   2024-07-13 15:00:30
  * @Last Modified by:   Alexander Silva Barbosa
- * @Last Modified time: 2024-07-14 01:01:17
+ * @Last Modified time: 2024-07-14 01:13:44
  */
+
+// Needs: sinricpro/SinricPro@^3.1.0
 
 #include <Arduino.h>
 #include <WiFiConnector.h>
